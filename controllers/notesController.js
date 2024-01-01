@@ -2,9 +2,15 @@ const { Notes } = require("../models/notes");
 
 exports.createNotes = async (req, res) => {
   try {
-    const { userId, title, text } = req.body;
+    const { title, text } = req.body;
 
-    if (!userId || !title || !text) {
+    if (!req.user) {
+      return res.status(401).json({ error: "unauthorized to create notes" });
+    }
+
+    console.log(req.user);
+
+    if (!title || !text) {
       return res.status(401).json({ error: "All fields are required" });
     }
 
@@ -20,7 +26,7 @@ exports.createNotes = async (req, res) => {
       });
     }
 
-    const notes = new Notes({ userId: userId, title: title, text: text });
+    const notes = new Notes({ userId: req.user.id, title: title, text: text });
 
     const doc = await notes.save();
 
@@ -34,9 +40,15 @@ exports.createNotes = async (req, res) => {
 exports.updateNotes = async (req, res) => {
   try {
     const { id } = req.params;
-    const { text, userId, title } = req.body;
+    const { text, title } = req.body;
 
-    if (!text || !userId || !title) {
+    if (!req.user) {
+      return res
+        .status(401)
+        .json({ error: "you are not authorized to update notes" });
+    }
+
+    if (!text || !title) {
       return res.status(401).json({ error: "All fields required" });
     }
 
@@ -48,13 +60,67 @@ exports.updateNotes = async (req, res) => {
 
     const updatedUser = await Notes.findByIdAndUpdate(
       id,
-      { userId: userId, title: title, text: text },
+      { userId: req.user.id, title: title, text: text },
       { new: true }
     );
 
     res.status(200).json(updatedUser);
   } catch (error) {
     console.log("error in updateNotes " + error.message);
+    res.status(500).json({ error: error.message });
+  }
+};
+
+exports.deleteNote = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    if (!req.user) {
+      return res
+        .status(401)
+        .json({ error: "you are not authorized to delete note" });
+    }
+
+    const note = await Notes.findById(id);
+
+    if (!note) {
+      return res.status(401).json({ error: "note not found" });
+    }
+
+    await Notes.findByIdAndDelete(id);
+
+    res.status(200).json({ message: "note deleted successfully" });
+  } catch (error) {
+    console.log("error in delete note " + error.message);
+    res.status(500).json({ error: error.message });
+  }
+};
+
+exports.getNotesOrNote = async (req, res) => {
+  try {
+    const { noteId } = req.body;
+
+    let docs;
+
+    if (!req.user) {
+      return res
+        .status(401)
+        .json({ error: "you are not authorized to get notes." });
+    }
+
+    if (noteId) {
+      docs = await Notes.findById(noteId);
+    } else {
+      docs = await Notes.find();
+    }
+
+    if (!docs) {
+      return res.status(401).json({ error: "No documents found" });
+    }
+
+    res.status(200).json(docs);
+  } catch (error) {
+    console.log("error in getNotesOrNote " + error.message);
     res.status(500).json({ error: error.message });
   }
 };

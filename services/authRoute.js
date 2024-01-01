@@ -1,6 +1,7 @@
 const jwt = require("jsonwebtoken");
+const { User } = require("../models/user");
 
-exports.authRoute = (req, res, next) => {
+exports.authRoute = async (req, res, next) => {
   try {
     const token = req.cookies.jwt;
 
@@ -9,8 +10,13 @@ exports.authRoute = (req, res, next) => {
     }
 
     const decodedToken = jwt.verify(token, process.env.SECRET_KEY);
-    console.log(decodedToken);
-    res.status(200).json({ success: "ok" });
+    console.log("decoded token", decodedToken);
+
+    const user = await User.findById(decodedToken.id).select("-password");
+
+    req.user = user;
+
+    next();
   } catch (error) {
     console.log("error in authentication " + error.message);
     res.status(500).json({ error: error.message });

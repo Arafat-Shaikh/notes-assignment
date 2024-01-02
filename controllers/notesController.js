@@ -55,7 +55,7 @@ exports.updateNotes = async (req, res) => {
     const note = await Notes.findById(id);
 
     if (!note) {
-      return res.status(401).json({ error: "document not found." });
+      return res.status(404).json({ error: "document not found." });
     }
 
     const updatedUser = await Notes.findByIdAndUpdate(
@@ -84,7 +84,7 @@ exports.deleteNote = async (req, res) => {
     const note = await Notes.findById(id);
 
     if (!note) {
-      return res.status(401).json({ error: "note not found" });
+      return res.status(404).json({ error: "note not found" });
     }
 
     await Notes.findByIdAndDelete(id);
@@ -115,7 +115,7 @@ exports.getNotesOrNote = async (req, res) => {
     }
 
     if (!docs) {
-      return res.status(401).json({ error: "No documents found" });
+      return res.status(404).json({ error: "No documents found" });
     }
 
     res.status(200).json(docs);
